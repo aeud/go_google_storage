@@ -8,7 +8,6 @@ import (
 	storage "google.golang.org/api/storage/v1"
 	"io/ioutil"
 	"log"
-	// "net/http"
 	"time"
 )
 
