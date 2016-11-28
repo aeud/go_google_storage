@@ -60,3 +60,58 @@ func NewStorageClient(keyFile string) *StorageClient {
 
 	return c
 }
+
+func (c *StorageClient) CreateBucket(projectId, bucketName string) {
+	bs := storage.NewBucketsService(c.Client)
+	bucket := new(storage.Bucket)
+	bucket.Name = bucketName
+	_, err := bs.Insert(projectId, bucket).Do()
+	if err != nil {
+		log.Fatalf("Error when creating: %v\n", err)
+	}
+}
+
+func (c *StorageClient) GetObjectsAndExecute(bucketName string, f func([]*storage.Object)) {
+	os := storage.NewObjectsService(c.Client).List(bucketName)
+	os.MaxResults(105)
+	ExtractObjects(os, "", f)
+}
+
+func ExtractObjects(os *storage.ObjectsListCall, nextPageToken string, f func([]*storage.Object)) {
+	os.PageToken(nextPageToken)
+	objects, err := os.Do()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	items := objects.Items
+	f(items)
+	if objects.NextPageToken != "" {
+		ExtractObjects(os, objects.NextPageToken, f)
+	}
+}
+
+func (c *StorageClient) DeleteObject(object *storage.Object) {
+	log.Printf("Deleting %v\n", object.Name)
+	err := storage.NewObjectsService(c.Client).Delete(object.Bucket, object.Name).Do()
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func (c *StorageClient) EmptyBucket(bucketName string) {
+	c.GetObjectsAndExecute(bucketName, func(is []*storage.Object) {
+		for _, o := range is {
+			c.DeleteObject(o)
+		}
+	})
+}
+
+func (c *StorageClient) DeleteBucket(bucketName string) {
+	c.EmptyBucket(bucketName)
+	time.Sleep(10 * time.Second)
+	bs := storage.NewBucketsService(c.Client)
+	err := bs.Delete(bucketName).Do()
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
