@@ -91,7 +91,7 @@ func ExtractObjects(os *storage.ObjectsListCall, nextPageToken string, f func([]
 }
 
 func (c *StorageClient) DeleteObject(object *storage.Object) {
-	log.Printf("Deleting %v\n", object.Name)
+	// log.Printf("Deleting %v\n", object.Name)
 	err := storage.NewObjectsService(c.Client).Delete(object.Bucket, object.Name).Do()
 	if err != nil {
 		log.Fatalln(err)
