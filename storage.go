@@ -108,10 +108,9 @@ func (c *StorageClient) EmptyBucket(bucketName string) {
 
 func (c *StorageClient) DeleteBucket(bucketName string) {
 	c.EmptyBucket(bucketName)
-	time.Sleep(10 * time.Second)
 	bs := storage.NewBucketsService(c.Client)
-	err := bs.Delete(bucketName).Do()
-	if err != nil {
-		log.Fatalln(err)
+	if err := bs.Delete(bucketName).Do(); err != nil {
+		time.Sleep(5 * time.Second)
+		c.DeleteBucket(bucketName)
 	}
 }
