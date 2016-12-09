@@ -90,27 +90,32 @@ func ExtractObjects(os *storage.ObjectsListCall, nextPageToken string, f func([]
 	}
 }
 
-func (c *StorageClient) DeleteObject(object *storage.Object) {
+func (c *StorageClient) DeleteObject(object *storage.Object) error {
 	// log.Printf("Deleting %v\n", object.Name)
-	err := storage.NewObjectsService(c.Client).Delete(object.Bucket, object.Name).Do()
-	if err != nil {
-		log.Fatalln(err)
-	}
+	return storage.NewObjectsService(c.Client).Delete(object.Bucket, object.Name).Do()
 }
 
-func (c *StorageClient) EmptyBucket(bucketName string) {
+func (c *StorageClient) EmptyBucket(bucketName string) (e error) {
 	c.GetObjectsAndExecute(bucketName, func(is []*storage.Object) {
 		for _, o := range is {
-			c.DeleteObject(o)
+			if err := c.DeleteObject(o); err != nil {
+				log.Printf("Error when deleting object: %v\n", err)
+				e = err
+			}
 		}
 	})
+	return
 }
 
-func (c *StorageClient) DeleteBucket(bucketName string) {
-	c.EmptyBucket(bucketName)
+func (c *StorageClient) DeleteBucket(bucketName string) error {
+	if err := c.EmptyBucket(bucketName); err != nil {
+		return err
+	}
 	bs := storage.NewBucketsService(c.Client)
 	if err := bs.Delete(bucketName).Do(); err != nil {
+		log.Printf("Retrying deleting bucket in 5 sec: %v\n", err)
 		time.Sleep(5 * time.Second)
-		c.DeleteBucket(bucketName)
+		return c.DeleteBucket(bucketName)
 	}
+	return nil
 }
