@@ -3,18 +3,21 @@ package go_google_storage
 import (
 	"bytes"
 	"compress/gzip"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	storage "google.golang.org/api/storage/v1"
 	"io/ioutil"
 	"log"
 	"time"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	storage "google.golang.org/api/storage/v1"
 )
 
+// StorageClient is the main type
 type StorageClient struct {
 	Client *storage.Service
 }
 
+// Store upload a file to Google Storage
 func (c *StorageClient) Store(bucketName, fileName string, content []byte) string {
 
 	object := &storage.Object{Name: fileName}
@@ -37,6 +40,7 @@ func (c *StorageClient) Store(bucketName, fileName string, content []byte) strin
 	return res.SelfLink
 }
 
+// NewStorageClient generates a new storage client
 func NewStorageClient(keyFile string) *StorageClient {
 	c := new(StorageClient)
 
@@ -61,6 +65,7 @@ func NewStorageClient(keyFile string) *StorageClient {
 	return c
 }
 
+// CreateBucket creates an emptuy bucket
 func (c *StorageClient) CreateBucket(projectId, bucketName string) {
 	bs := storage.NewBucketsService(c.Client)
 	bucket := new(storage.Bucket)
@@ -71,12 +76,14 @@ func (c *StorageClient) CreateBucket(projectId, bucketName string) {
 	}
 }
 
+// GetObjectsAndExecute executes a lambda function to all elements
 func (c *StorageClient) GetObjectsAndExecute(bucketName string, f func([]*storage.Object)) {
 	os := storage.NewObjectsService(c.Client).List(bucketName)
 	os.MaxResults(105)
 	ExtractObjects(os, "", f)
 }
 
+// ExtractObjects gets all the objects from a bucket
 func ExtractObjects(os *storage.ObjectsListCall, nextPageToken string, f func([]*storage.Object)) {
 	os.PageToken(nextPageToken)
 	objects, err := os.Do()
@@ -90,11 +97,13 @@ func ExtractObjects(os *storage.ObjectsListCall, nextPageToken string, f func([]
 	}
 }
 
+// DeleteObject deletes a single object from Google Storage
 func (c *StorageClient) DeleteObject(object *storage.Object) error {
 	// log.Printf("Deleting %v\n", object.Name)
 	return storage.NewObjectsService(c.Client).Delete(object.Bucket, object.Name).Do()
 }
 
+// EmptyBucket removes all the files from a bucket
 func (c *StorageClient) EmptyBucket(bucketName string) (e error) {
 	c.GetObjectsAndExecute(bucketName, func(is []*storage.Object) {
 		for _, o := range is {
@@ -107,6 +116,7 @@ func (c *StorageClient) EmptyBucket(bucketName string) (e error) {
 	return
 }
 
+// DeleteBucket removes a bucket from Google Storage
 func (c *StorageClient) DeleteBucket(bucketName string) error {
 	if err := c.EmptyBucket(bucketName); err != nil {
 		return err
