@@ -32,7 +32,7 @@ func (c *StorageClient) Store(bucketName, fileName string, content []byte) strin
 
 	res, err := c.Client.Objects.Insert(bucketName, object).Media(file).Do()
 	if err != nil {
-		log.Printf("Objects.Insert failed: %v\n", err)
+		log.Printf("Objects.Insert failed, retrying: %v\n", err)
 		time.Sleep(10 * time.Second)
 		return c.Store(bucketName, fileName, content)
 	}
