@@ -108,7 +108,7 @@ func (c *StorageClient) EmptyBucket(bucketName string) (e error) {
 	c.GetObjectsAndExecute(bucketName, func(is []*storage.Object) {
 		for _, o := range is {
 			if err := c.DeleteObject(o); err != nil {
-				log.Printf("Error when deleting object: %v\n", err)
+				log.Printf("Error when deleting object: %v, %v\n", o.Id, err)
 				e = err
 			}
 		}
