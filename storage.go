@@ -98,16 +98,21 @@ func ExtractObjects(os *storage.ObjectsListCall, nextPageToken string, f func([]
 }
 
 // DeleteObject deletes a single object from Google Storage
-func (c *StorageClient) DeleteObject(object *storage.Object) error {
+func (c *StorageClient) DeleteObject(object *storage.Object, try int) (err error) {
 	// log.Printf("Deleting %v\n", object.Name)
-	return storage.NewObjectsService(c.Client).Delete(object.Bucket, object.Name).Do()
+	err = storage.NewObjectsService(c.Client).Delete(object.Bucket, object.Name).Do()
+	if err != nil && try < 5 {
+		log.Printf("Error when deleting object, retrying: %v, %v\n", object.Id, err)
+		return c.DeleteObject(object, try+1)
+	}
+	return
 }
 
 // EmptyBucket removes all the files from a bucket
 func (c *StorageClient) EmptyBucket(bucketName string) (e error) {
 	c.GetObjectsAndExecute(bucketName, func(is []*storage.Object) {
 		for _, o := range is {
-			if err := c.DeleteObject(o); err != nil {
+			if err := c.DeleteObject(o, 0); err != nil {
 				log.Printf("Error when deleting object: %v, %v\n", o.Id, err)
 				e = err
 			}
