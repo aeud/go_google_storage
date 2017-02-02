@@ -76,6 +76,23 @@ func (c *StorageClient) CreateBucket(projectId, bucketName string) {
 	}
 }
 
+// CreateBucketIfNotExists creates an emptuy bucket if not existing already, return exists and error
+func (c *StorageClient) CreateBucketIfNotExists(projectID, bucketName string) (bool, error) {
+	var err error
+	bs := storage.NewBucketsService(c.Client)
+	_, err = bs.Get(bucketName).Do()
+	if err == nil {
+		return true, nil
+	}
+	bucket := new(storage.Bucket)
+	bucket.Name = bucketName
+	_, err = bs.Insert(projectID, bucket).Do()
+	if err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
 // GetObjectsAndExecute executes a lambda function to all elements
 func (c *StorageClient) GetObjectsAndExecute(bucketName string, f func([]*storage.Object)) {
 	os := storage.NewObjectsService(c.Client).List(bucketName)
