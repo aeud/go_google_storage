@@ -1,11 +1,16 @@
 package go_google_storage
 
 import (
-	"bytes"
 	"compress/gzip"
 	"io/ioutil"
 	"log"
 	"time"
+
+	"io"
+
+	"fmt"
+
+	"bytes"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -21,21 +26,32 @@ type StorageClient struct {
 func (c *StorageClient) Store(bucketName, fileName string, content []byte) string {
 
 	object := &storage.Object{Name: fileName}
+	r2 := bytes.NewReader(content)
 
-	var b bytes.Buffer
-	w := gzip.NewWriter(&b)
+	pr, pw := io.Pipe()
+	defer pr.Close()
 
-	w.Write(content)
+	// var b bytes.Buffer
+	w := gzip.NewWriter(pw)
 
-	w.Close()
-	file := bytes.NewReader(b.Bytes())
+	go func() {
+		defer w.Close()
+		defer pw.Close()
+		io.Copy(w, r2)
+	}()
 
-	res, err := c.Client.Objects.Insert(bucketName, object).Media(file).Do()
+	// w.Close()
+	// pr.Close()
+	// pw.Close()
+	// file := bytes.NewReader(b.Bytes())
+
+	res, err := c.Client.Objects.Insert(bucketName, object).Media(pr).Do()
 	if err != nil {
 		log.Printf("Objects.Insert failed, retrying: %v\n", err)
 		time.Sleep(10 * time.Second)
 		return c.Store(bucketName, fileName, content)
 	}
+	fmt.Println("foo")
 
 	return res.SelfLink
 }

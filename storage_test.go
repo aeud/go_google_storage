@@ -12,7 +12,7 @@ func TestStore(t *testing.T) {
 	bs, _ := json.Marshal(struct {
 		Foo string `json:"foo"`
 	}{"bar"})
-	NewStorageClient("/Users/adrien/.ssh/google.json").Store("lx-ga", "test.json.gz", bs)
+	NewStorageClient("/Users/ae/.ssh/google.json").Store("lx-test", "0000test.json.gz", bs)
 }
 
 func TestInsertBucket(t *testing.T) {
