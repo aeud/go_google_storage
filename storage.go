@@ -8,8 +8,6 @@ import (
 
 	"io"
 
-	"fmt"
-
 	"bytes"
 
 	"golang.org/x/oauth2"
@@ -51,7 +49,6 @@ func (c *StorageClient) Store(bucketName, fileName string, content []byte) strin
 		time.Sleep(10 * time.Second)
 		return c.Store(bucketName, fileName, content)
 	}
-	fmt.Println("foo")
 
 	return res.SelfLink
 }
